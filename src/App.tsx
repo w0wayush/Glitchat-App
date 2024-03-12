@@ -1,9 +1,10 @@
 import React from "react";
+import LogInPage from "./Pages/LogInPage";
 
 function App() {
   return (
     <div className="App">
-      <h1 className="text-blue-900 text-bold">Helloww Duniya</h1>
+      <LogInPage />
     </div>
   );
 }
