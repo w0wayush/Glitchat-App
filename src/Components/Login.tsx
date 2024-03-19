@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Input from "./Input";
 import Button from "./Button";
+import { BackEnd_SignUp } from "../Backend/Queries";
 
 const Login = () => {
   const [login, setLogin] = useState(true);
@@ -14,7 +15,8 @@ const Login = () => {
   };
   const handleSignUp = () => {
     const data = { email, password, confirmPassword };
-    console.log(data);
+    BackEnd_SignUp(data);
+    // console.log(data);
   };
 
   return (
@@ -51,7 +53,7 @@ const Login = () => {
         ) : (
           <>
             <Button text="Register" onClick={handleSignUp} />
-            <Button onClick={() => setLogin(true)} text="Logjn" secondary />
+            <Button onClick={() => setLogin(true)} text="Login" secondary />
           </>
         )}
       </div>
