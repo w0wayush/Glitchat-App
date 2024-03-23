@@ -1,24 +1,60 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { auth } from "./Firebase";
-import { toast } from "react-toastify";
+import { toastErr, toastWarn } from "../utils/toast";
+import CatchErr from "../utils/catchErr";
+import { authDataType, setLoadingType } from "../Types";
+import { NavigateFunction } from "react-router-dom";
 
-export const BackEnd_SignUp = (data: {
-  email: string;
-  password: string;
-  confirmPassword: string;
-}) => {
+export const BackEnd_SignUp = (
+  data: authDataType,
+  setLoading: setLoadingType,
+  reset: () => void,
+  goTo: NavigateFunction
+) => {
   const { email, password, confirmPassword } = data;
 
+  setLoading(true);
   if (email && password) {
     if (!confirmPassword) {
-      toast.error("Please enter confirm password");
+      toastErr("Please enter confirm password");
     } else if (password === confirmPassword) {
       //console.log({ email, password });
       createUserWithEmailAndPassword(auth, email, password)
-        .then((userCred) => {
-          console.log(userCred);
+        .then(({ user }) => {
+          console.log(user);
+          setLoading(false);
+          reset();
+          goTo("/dashboard");
         })
-        .catch((error) => console.log(error));
-    } else toast.warn("Passwords must match");
-  } else toast.error("Please fill all details");
+        .catch((error) => {
+          CatchErr(error);
+          setLoading(false);
+        });
+    } else toastWarn("Passwords must match");
+  } else toastErr("Please fill all details");
+};
+
+export const BackEnd_SignIn = (
+  data: authDataType,
+  setLoading: setLoadingType,
+  reset: () => void,
+  goTo: NavigateFunction
+) => {
+  setLoading(true);
+  const { email, password } = data;
+
+  signInWithEmailAndPassword(auth, email, password)
+    .then(({ user }) => {
+      console.log(user);
+      setLoading(false);
+      reset();
+      goTo("/dashboard");
+    })
+    .catch((error) => {
+      CatchErr(error);
+      setLoading(false);
+    });
 };
