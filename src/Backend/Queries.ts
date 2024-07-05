@@ -4,28 +4,38 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth, db } from "./Firebase";
-import { toastErr, toastWarn } from "../utils/toast";
+import { toastErr } from "../utils/toast";
 import CatchErr from "../utils/catchErr";
-import { authDataType, setLoadingType, userType } from "../Types";
+import { authDataType, setLoadingType, taskListType, userType } from "../Types";
 import { NavigateFunction } from "react-router-dom";
 import {
+  addDoc,
+  collection,
   doc,
   getDoc,
+  getDocs,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { defaultUser, setUser, userStorageName } from "../Redux/userSlice";
 import { AppDispatch } from "../Redux/store";
 import ConvertTime from "../utils/ConvertTime";
 import AvatarGenerator from "../utils/avatarGenerator";
+import {
+  addTaskList,
+  defaultTaskList,
+  setTaskList,
+} from "../Redux/taskListSlice";
 
 //collection names
 const usersColl = "users";
-const tasksColl = "tasks";
+// const tasksColl = "tasks";
 const taskListColl = "taskList";
-const chatsColl = "chats";
-const messagesColl = "messages";
+// const chatsColl = "chats";
+// const messagesColl = "messages";
 
 export const BackEnd_SignUp = (
   data: authDataType,
@@ -212,4 +222,71 @@ const updateUserInfo = async ({
       lastSeen: serverTimestamp(),
     });
   }
+};
+
+// --------------------- For Task List -----------------------------
+
+// to add a single task list
+export const BE_addTaskList = async (
+  dispatch: AppDispatch,
+  setLoading: setLoadingType
+) => {
+  setLoading(true);
+  const { title } = defaultTaskList;
+  const list = await addDoc(collection(db, taskListColl), {
+    title,
+    userId: getStorageUser().id,
+  });
+
+  const newDocSnap = await getDoc(doc(db, list.path));
+  // console.log(newDocSnap);
+
+  if (newDocSnap.exists()) {
+    const newlyAddedDoc: taskListType = {
+      id: newDocSnap.id,
+      title: newDocSnap.data().title,
+    };
+
+    dispatch(addTaskList(newlyAddedDoc));
+    setLoading(false);
+  } else {
+    toastErr("BE_addTaskList: No such doc exists");
+    setLoading(false);
+  }
+};
+
+//get all task list
+export const BE_getTaskList = async (
+  dispatch: AppDispatch,
+  setLoading: setLoadingType
+) => {
+  setLoading(true);
+
+  // get users task list
+  const taskList = await getAllTaskList();
+
+  dispatch(setTaskList(taskList));
+  setLoading(false);
+};
+
+const getAllTaskList = async () => {
+  const q = query(
+    collection(db, taskListColl),
+    where("userId", "==", getStorageUser().id)
+  );
+
+  const taskListSnapshot = await getDocs(q);
+  const taskList: taskListType[] = [];
+
+  taskListSnapshot.forEach((doc) => {
+    const { title } = doc.data();
+    taskList.push({
+      id: doc.id,
+      title,
+      editMode: false,
+      tasks: [],
+    });
+  });
+
+  return taskList;
 };

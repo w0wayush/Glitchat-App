@@ -1,5 +1,6 @@
 import React from "react";
 import { IconType } from "react-icons";
+import Spinner from "./Spinner";
 
 type IconProps = {
   IconName: IconType;
@@ -17,7 +18,7 @@ const Icon = ({
   size = 20,
   loading,
   ping,
-  reduceOpacityOnHover,
+  reduceOpacityOnHover = true,
   onClick,
 }: IconProps) => {
   return (
@@ -26,11 +27,11 @@ const Icon = ({
       disabled={loading}
       className={`p-3 relative rounded-full cursor-pointer hover:bg-myBlue ${
         reduceOpacityOnHover
-          ? "hover: bg-opacity-30"
+          ? "hover:bg-opacity-30"
           : "bg-myBlue text-white border-2 border-white hover:drop-shadow-lg"
       } ${loading && "cursor-wait"} ${className}`}
     >
-      {loading ? "Loading" : <IconName size={size} />}
+      {loading ? <Spinner /> : <IconName size={size} />}
 
       {ping && (
         <div>

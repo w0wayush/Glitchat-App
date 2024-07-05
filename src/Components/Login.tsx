@@ -1,8 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Input from "./Input";
 import Button from "./Button";
-import { BackEnd_SignIn, BackEnd_SignUp } from "../Backend/Queries";
+import {
+  BackEnd_SignIn,
+  BackEnd_SignUp,
+  getStorageUser,
+} from "../Backend/Queries";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../Redux/store";
+import { authDataType } from "../Types";
+import { setUser } from "../Redux/userSlice";
 
 const Login = () => {
   const [login, setLogin] = useState(true);
@@ -11,18 +19,39 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [signUpLoading, setSignUpLoading] = useState(false);
   const [signInLoading, setSignInLoading] = useState(false);
+  const usr = getStorageUser();
 
-  const goTo = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (usr?.id) {
+      dispatch(setUser(usr));
+      navigate("/dashboard");
+    } else {
+      navigate("/auth");
+    }
+  }, []);
 
   const handleSignUp = () => {
     const data = { email, password, confirmPassword };
-    BackEnd_SignUp(data, setSignUpLoading, reset, goTo);
+    // BackEnd_SignUp(data, setSignUpLoading, reset, navigate, dispatch);
+    auth(data, BackEnd_SignUp, setSignUpLoading);
     // console.log(data);
   };
 
   const handleSignIn = () => {
     const data = { email, password };
-    BackEnd_SignIn(data, setSignInLoading, reset, goTo);
+    // BackEnd_SignIn(data, setSignInLoading, reset, navigate, dispatch);
+    auth(data, BackEnd_SignIn, setSignInLoading);
+  };
+
+  const auth = (
+    data: authDataType,
+    func: any,
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>
+  ) => {
+    func(data, setLoading, reset, navigate, dispatch);
   };
 
   const reset = () => {
