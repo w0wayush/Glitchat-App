@@ -1,7 +1,7 @@
 import React from "react";
 import Login from "../Components/Login";
 
-const LogInPage = () => {
+const LoginPage = () => {
   return (
     <div className="h-[100vh] flex items-center justify-center p-10">
       <Login />
@@ -13,4 +13,4 @@ const LogInPage = () => {
   );
 };
 
-export default LogInPage;
+export default LoginPage;
