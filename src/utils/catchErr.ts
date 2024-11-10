@@ -2,21 +2,21 @@ import { toastErr, toastInfo } from "./toast";
 
 const CatchErr = (err: { code?: string }) => {
   const { code } = err;
-  if (code === "auth/invalid-email") toastErr("Invalid Email");
+  if (code === "auth/invalid-email") toastErr("invalid email");
   else if (code === "auth/weak-password")
-    toastErr("Password should be atleast 6 characters");
-  else if (code === "auth/user-not-found") toastErr("User not found");
+    toastErr("password should be atleast 6 characters");
+  else if (code === "auth/user-not-found") toastErr("user not found");
   else if (code === "auth/email-already-in-use")
-    toastErr("Email already exists");
-  else if (code === "auth/wrong-password") toastErr("Wrong Password");
+    toastErr("email already exists");
+  else if (code === "auth/wrong-password") toastErr("wrong password");
   else if (code === "auth/requires-recent-login")
-    toastInfo("Logout and Login before updating profile");
-  else if (code === "unavailable") toastErr("Firebase client is offline");
-  else if (code === "auth/invalid-credential")
-    toastErr("User not found / Invalid Credentials");
-  else if (code === "auth/invalid-login-credential")
-    toastErr("Invalid Login Credentials");
-  else toastErr("Error Occured");
+    toastInfo("logout and login before updating your profile");
+  else if (code === "unavailable") toastErr("firebase client is offline");
+  else if (code === "auth/invalid-login-credentials")
+    toastErr("invalid credentials");
+  else if (code === "auth/operation-not-allowed")
+    toastErr("Can't change email now!");
+  else toastErr("An error occured!");
   console.log(err, err.code);
 };
 
