@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Input from "./Input";
 import Button from "./Button";
-import {
-  BackEnd_SignIn,
-  BackEnd_SignUp,
-  getStorageUser,
-} from "../Backend/Queries";
+import { BE_signIn, BE_signUp, getStorageUser } from "../Backend/Queries";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../Redux/store";
@@ -19,31 +15,24 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [signUpLoading, setSignUpLoading] = useState(false);
   const [signInLoading, setSignInLoading] = useState(false);
-  const usr = getStorageUser();
-
+  const goTo = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
+  const usr = getStorageUser();
 
   useEffect(() => {
     if (usr?.id) {
       dispatch(setUser(usr));
-      navigate("/dashboard");
-    } else {
-      navigate("/auth");
+      goTo("/dashboard");
     }
   }, []);
 
-  const handleSignUp = () => {
+  const handleSignup = () => {
     const data = { email, password, confirmPassword };
-    // BackEnd_SignUp(data, setSignUpLoading, reset, navigate, dispatch);
-    auth(data, BackEnd_SignUp, setSignUpLoading);
-    // console.log(data);
+    auth(data, BE_signUp, setSignUpLoading);
   };
-
-  const handleSignIn = () => {
+  const handleSignin = () => {
     const data = { email, password };
-    // BackEnd_SignIn(data, setSignInLoading, reset, navigate, dispatch);
-    auth(data, BackEnd_SignIn, setSignInLoading);
+    auth(data, BE_signIn, setSignInLoading);
   };
 
   const auth = (
@@ -51,7 +40,7 @@ const Login = () => {
     func: any,
     setLoading: React.Dispatch<React.SetStateAction<boolean>>
   ) => {
-    func(data, setLoading, reset, navigate, dispatch);
+    func(data, setLoading, reset, goTo, dispatch);
   };
 
   const reset = () => {
@@ -65,7 +54,7 @@ const Login = () => {
       <h1 className="text-white text-center font-bold text-4xl md:text-6xl mb-10">
         {login ? "Login" : "Register"}
       </h1>
-      <div className="flex flex-col gap-3 bg-white p-6 min-h-[150px] rounded-xl drop-shadow-xl">
+      <div className="flex flex-col gap-3 bg-white w-full p-6 min-h-[150px] rounded-xl drop-shadow-xl">
         <Input
           name="email"
           type="email"
@@ -86,11 +75,12 @@ const Login = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
         )}
+
         {login ? (
           <>
             <Button
               text="Login"
-              onClick={handleSignIn}
+              onClick={handleSignin}
               loading={signInLoading}
             />
             <Button onClick={() => setLogin(false)} text="Register" secondary />
@@ -99,7 +89,7 @@ const Login = () => {
           <>
             <Button
               text="Register"
-              onClick={handleSignUp}
+              onClick={handleSignup}
               loading={signUpLoading}
             />
             <Button onClick={() => setLogin(true)} text="Login" secondary />

@@ -24,11 +24,10 @@ const Input = ({
       value={value}
       onChange={onChange}
       onKeyDown={onKeyDown}
-      disabled={disabled}
       type={type}
       placeholder={`Enter ${name}`}
-      className={`flex-1 placeholder-gray-400 bg-transparent px-3 py-1  border-2 border-gray-300 
-      rounded-full ${className}`}
+      disabled={disabled}
+      className={`flex-1 placeholder-gray-300 bg-transparent px-3 py-1 border-2 border-gray-300 rounded-full ${className}`}
     />
   );
 };
