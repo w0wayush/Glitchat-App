@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import Button from "./Button";
-import { MdAdd } from "react-icons/md";
 import Icon from "./Icon";
+import { MdAdd } from "react-icons/md";
 import { useDispatch } from "react-redux";
-import { BE_addTaskList } from "../Backend/Queries";
 import { AppDispatch } from "../Redux/store";
+import { BE_addTaskList } from "../Backend/Queries";
 
 const AddListBoard = () => {
   const [addLoading, setAddLoading] = useState(false);
@@ -18,15 +18,14 @@ const AddListBoard = () => {
     <>
       <Button
         text="Add New ListBoard"
-        secondary
-        className="hidden md:flex "
         onClick={handleAddTaskList}
+        className="hidden md:flex"
         loading={addLoading}
       />
       <Icon
+        onClick={handleAddTaskList}
         IconName={MdAdd}
         className="block md:hidden"
-        onClick={handleAddTaskList}
         loading={addLoading}
         reduceOpacityOnHover={false}
       />
