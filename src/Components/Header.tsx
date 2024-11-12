@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { BE_getChats, BE_signOut, getStorageUser } from "../Backend/Queries";
 import Spinner from "./Spinner";
 import { setUser } from "../Redux/userSlice";
-const logo = require("../Assets/logo.png");
+const logo = require(".././Assets/Vector3.png");
 
 type Props = {};
 
@@ -59,12 +59,13 @@ function Header() {
   };
 
   return (
-    <div className="flex flex-wrap z-10 sm:flex-row gap-5 items-center justify-between drop-shadow-md bg-gradient-to-r from-myBlue to-myPink px-5 py-5 md:py-2 text-white">
-      <img
-        className="w-[70px] drop-shadow-md cursor-pointer"
-        src={logo}
-        alt="logo"
-      />
+    <div className="flex flex-wrap z-10 sm:flex-row gap-5 items-center justify-between drop-shadow-md bg-gradient-to-r from-myBlue via-indigo-900 to-myPink px-5 py-5 md:py-4 text-white">
+      <a href="/" className="flex items-center gap-2">
+        <img src={logo} alt="logo" className="h-10 w-10" />
+        <span className="font-bold text-xl  tracking-wider text-white">
+          GLITCH
+        </span>
+      </a>
       <div className="flex flex-row-reverse md:flex-row items-center justify-center gap-5 flex-wrap">
         {getCurrentPage() === "chat" ? (
           <Icon
