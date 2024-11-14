@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  scroll-behavior: smooth;
+}
+
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari, and Opera */
   .no-scrollbar::-webkit-scrollbar {
@@ -12,4 +16,42 @@
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
   }
+}
+
+.animate-slide-vertical-up {
+  animation: slideVerticalUp var(--_animation-duration, 60s)
+    var(--_animation-direction, forwards) linear infinite;
+}
+
+@keyframes slideVerticalUp {
+  to {
+    transform: translateY(calc(-100%));
+  }
+}
+
+.animate-slide-vertical-down {
+  animation: slideVerticalDown var(--_animation-duration, 60s)
+    var(--_animation-direction, forwards) linear infinite reverse;
+}
+
+@keyframes slideVerticalDown {
+  to {
+    transform: translateY(calc(-100%));
+  }
+}
+
+.logos[data-speed="fast"] {
+  --_animation-duration: 25s;
+}
+
+.logos[data-speed="slow"] {
+  --_animation-duration: 60s;
+}
+
+.logos[data-direction="up"] {
+  --_animation-direction: reverse;
+}
+
+.logos[data-direction="down"] {
+  --_animation-direction: normal;
 }
