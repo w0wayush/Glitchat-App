@@ -1,63 +1,93 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   signInWithEmailAndPassword,
   signOut,
-} from "firebase/auth";
+  updateEmail,
+  updatePassword,
+} from "@firebase/auth";
 import { auth, db } from "./Firebase";
-import { toastErr } from "../utils/toast";
+import { toastErr, toastSucc } from "../utils/toast";
 import CatchErr from "../utils/catchErr";
-import { authDataType, setLoadingType, taskListType, userType } from "../Types";
+import {
+  authDataType,
+  chatType,
+  messageType,
+  setLoadingType,
+  taskListType,
+  taskType,
+  userType,
+} from "../Types";
 import { NavigateFunction } from "react-router-dom";
 import {
   addDoc,
+  and,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
+  or,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
+  Timestamp,
   updateDoc,
   where,
-} from "firebase/firestore";
-import { defaultUser, setUser, userStorageName } from "../Redux/userSlice";
+} from "@firebase/firestore";
+import {
+  defaultUser,
+  setAlertProps,
+  setUser,
+  setUsers,
+  userStorageName,
+} from "../Redux/userSlice";
 import { AppDispatch } from "../Redux/store";
 import ConvertTime from "../utils/ConvertTime";
 import AvatarGenerator from "../utils/avatarGenerator";
 import {
+  addTask,
   addTaskList,
+  defaultTask,
   defaultTaskList,
+  deleteTask,
+  deleteTaskList,
+  saveTask,
+  saveTaskListTitle,
   setTaskList,
+  setTaskListTasks,
 } from "../Redux/taskListSlice";
+import { setChats, setCurrentMessages } from "../Redux/chatsSlice";
 
-//collection names
+// collection names
 const usersColl = "users";
-// const tasksColl = "tasks";
+const tasksColl = "tasks";
 const taskListColl = "taskList";
-// const chatsColl = "chats";
-// const messagesColl = "messages";
+const chatsColl = "chats";
+const messagesColl = "messages";
 
-export const BackEnd_SignUp = (
+// register or signup a user
+export const BE_signUp = (
   data: authDataType,
   setLoading: setLoadingType,
   reset: () => void,
-  navigate: NavigateFunction,
+  goTo: NavigateFunction,
   dispatch: AppDispatch
 ) => {
   const { email, password, confirmPassword } = data;
 
+  // loading true
   setLoading(true);
 
   if (email && password) {
-    if (!confirmPassword) {
-      toastErr("Please enter confirm password");
-    } else if (password === confirmPassword) {
-      //console.log({ email, password });
+    if (password === confirmPassword) {
       createUserWithEmailAndPassword(auth, email, password)
         .then(async ({ user }) => {
+          // generate user avatar with username
           const imgLink = AvatarGenerator(user.email?.split("@")[0]);
 
-          //get the user info
           const userInfo = await addUserToCollection(
             user.uid,
             user.email || "",
@@ -65,73 +95,79 @@ export const BackEnd_SignUp = (
             imgLink
           );
 
-          //set the user info in store and local storage
+          // set user in store
           dispatch(setUser(userInfo));
 
-          console.log(user);
           setLoading(false);
           reset();
-          navigate("/dashboard");
+          goTo("/dashboard");
         })
-        .catch((error) => {
-          CatchErr(error);
+        .catch((err) => {
+          CatchErr(err);
           setLoading(false);
         });
-    } else toastErr("Passwords must match", setLoading);
-  } else toastErr("Please fill all details", setLoading);
+    } else toastErr("Passwords must match!", setLoading);
+  } else toastErr("Fields shouldn't be left empty!", setLoading);
 };
 
-export const BackEnd_SignIn = (
+// sign in a user
+export const BE_signIn = (
   data: authDataType,
   setLoading: setLoadingType,
   reset: () => void,
-  navigate: NavigateFunction,
+  goTo: NavigateFunction,
   dispatch: AppDispatch
 ) => {
-  setLoading(true);
   const { email, password } = data;
+
+  // loading true
+  setLoading(true);
 
   signInWithEmailAndPassword(auth, email, password)
     .then(async ({ user }) => {
-      //update users isOnline to true
+      //update user isOnline to true
       await updateUserInfo({ id: user.uid, isOnline: true });
 
-      //get user info
+      // get user info
       const userInfo = await getUserInfo(user.uid);
 
-      //set the user in store and local storage
+      // set user in store
       dispatch(setUser(userInfo));
-      // localStorage.setItem(userStorageName, JSON.stringify(userInfo));
 
       setLoading(false);
       reset();
-      navigate("/dashboard");
+      goTo("/dashboard");
     })
-    .catch((error) => {
-      CatchErr(error);
+    .catch((err) => {
+      CatchErr(err);
       setLoading(false);
     });
 };
 
-export const BackEnd_SignOut = (
+// signout
+export const BE_signOut = (
   dispatch: AppDispatch,
-  navigate: NavigateFunction,
-  setLogoutLoading: setLoadingType
+  goTo: NavigateFunction,
+  setLoading: setLoadingType,
+  deleteAcc?: boolean
 ) => {
-  //logout in firebase
-  setLogoutLoading(true);
+  setLoading(true);
+  // logout in firebase
   signOut(auth)
     .then(async () => {
-      navigate("/auth");
+      // set user offline
+      if (!deleteAcc) await updateUserInfo({ isOffline: true });
 
-      await updateUserInfo({ isOffline: true });
-
-      //set currentUser to empty user
+      // set currentSelected user to empty user
       dispatch(setUser(defaultUser));
 
-      //remove from localStorage
+      // remove from local storage
       localStorage.removeItem(userStorageName);
-      setLogoutLoading(false);
+
+      // route to auth page
+      goTo("/");
+
+      setLoading(false);
     })
     .catch((err) => CatchErr(err));
 };
@@ -143,13 +179,174 @@ export const getStorageUser = () => {
   else return "";
 };
 
+// save user profile
+export const BE_saveProfile = async (
+  dispatch: AppDispatch,
+  data: { email: string; username: string; password: string; img: string },
+  setLoading: setLoadingType
+) => {
+  setLoading(true);
+
+  const { email, username, password, img } = data;
+  const id = getStorageUser().id;
+
+  if (id) {
+    // update email if present
+    if (email && auth.currentUser) {
+      updateEmail(auth.currentUser, email)
+        .then(() => {
+          toastSucc("Email updated successfully!");
+        })
+        .catch((err) => CatchErr(err));
+    }
+
+    // update passsword if present
+    if (password && auth.currentUser) {
+      updatePassword(auth.currentUser, password)
+        .then(() => {
+          toastSucc("Password updated successfully!");
+        })
+        .catch((err) => CatchErr(err));
+    }
+
+    // update user collection only if username or img is present
+    if (username || img) {
+      await updateUserInfo({ username, img });
+      toastSucc("Updated profile successfully!");
+    }
+
+    // get user latest info
+    const userInfo = await getUserInfo(id);
+
+    // update user in state or store
+    dispatch(setUser(userInfo));
+    setLoading(false);
+  } else toastErr("BE_saveProfile: id not found");
+};
+
+// delete account
+export const BE_deleteAccount = async (
+  dispatch: AppDispatch,
+  goTo: NavigateFunction,
+  setLoading: setLoadingType
+) => {
+  setLoading(true);
+
+  if (getStorageUser().id) {
+    // get all taskList
+    const userTaskList = await getAllTaskList();
+
+    // loop through user tasklist and delete each
+    if (userTaskList.length > 0) {
+      userTaskList.forEach(async (tL) => {
+        if (tL.id && tL.tasks)
+          await BE_deleteTaskList(tL.id, tL.tasks, dispatch);
+      });
+    }
+
+    // delete the user info from collection
+    await deleteDoc(doc(db, usersColl, getStorageUser().id));
+
+    // finally delete user account
+    const user = auth.currentUser;
+
+    console.log("USER TO BE DELETED", user);
+
+    if (user) {
+      deleteUser(user)
+        .then(async () => {
+          BE_signOut(dispatch, goTo, setLoading, true);
+          //window.location.reload();
+        })
+        .catch((err) => CatchErr(err));
+    }
+  }
+};
+
+// get all users
+export const BE_getAllUsers = async (
+  dispatch: AppDispatch,
+  setLoading: setLoadingType
+) => {
+  setLoading(true);
+
+  // get all users except the current signin one, those online ontop
+  const q = query(collection(db, usersColl), orderBy("isOnline", "desc"));
+  onSnapshot(q, (usersSnapshot) => {
+    let users: userType[] = [];
+
+    usersSnapshot.forEach((user) => {
+      const { img, isOnline, username, email, bio, creationTime, lastSeen } =
+        user.data();
+      users.push({
+        id: user.id,
+        img,
+        isOnline,
+        username,
+        email,
+        bio,
+        creationTime: creationTime
+          ? ConvertTime(creationTime.toDate())
+          : "no date yet: all users creation time",
+        lastSeen: lastSeen
+          ? ConvertTime(lastSeen.toDate())
+          : "no date yet: all users lastseen",
+      });
+    });
+
+    // take out the current user
+    const id = getStorageUser().id;
+    if (id) {
+      dispatch(setUsers(users.filter((u) => u.id !== id)));
+    }
+    setLoading(false);
+  });
+};
+
+// get user information
+export const getUserInfo = async (
+  id: string,
+  setLoading?: setLoadingType
+): Promise<userType> => {
+  if (setLoading) setLoading(true);
+  const userRef = doc(db, usersColl, id);
+  const user = await getDoc(userRef);
+
+  if (user.exists()) {
+    const { img, isOnline, username, email, bio, creationTime, lastSeen } =
+      user.data();
+
+    if (setLoading) setLoading(false);
+
+    return {
+      id: user.id,
+      img,
+      isOnline,
+      username,
+      email,
+      bio,
+      creationTime: creationTime
+        ? ConvertTime(creationTime.toDate())
+        : "no date yet: userinfo",
+      lastSeen: lastSeen
+        ? ConvertTime(lastSeen.toDate())
+        : "no date yet: userinfo",
+    };
+  } else {
+    if (setLoading) setLoading(false);
+    toastErr("getUserInfo: user not found");
+    return defaultUser;
+  }
+};
+
+// add user to collection
 const addUserToCollection = async (
   id: string,
   email: string,
   username: string,
   img: string
 ) => {
-  //create user with userId
+  // create user with userId
   await setDoc(doc(db, usersColl, id), {
     isOnline: true,
     img,
@@ -157,45 +354,14 @@ const addUserToCollection = async (
     email,
     creationTime: serverTimestamp(),
     lastSeen: serverTimestamp(),
-    bio: `Hi! my name is ${username}, connect with me...`,
+    bio: `
+    Hi! my name is {username}, connect with me...`,
   });
 
-  //find the data and return the user info
   return getUserInfo(id);
 };
 
-const getUserInfo = async (id: string): Promise<userType> => {
-  //get user wih userId
-  const userRef = doc(db, usersColl, id);
-  const user = await getDoc(userRef);
-
-  if (user.exists()) {
-    const { img, isOnline, username, email, creationTime, lastSeen, bio } =
-      user.data();
-
-    //return user infor from users data
-    return {
-      id: user.id,
-      img,
-      isOnline,
-      username,
-      email,
-      creationTime: creationTime
-        ? ConvertTime(creationTime.toDate())
-        : "no date yet : userinfo",
-      lastSeen: lastSeen
-        ? ConvertTime(lastSeen.toDate())
-        : "no date yet : userinfo",
-      bio,
-    };
-  } else {
-    toastErr("getUserInfo: user not found");
-    //return default user info
-    return defaultUser;
-  }
-};
-
-//update user info
+// update user info
 const updateUserInfo = async ({
   id,
   username,
@@ -213,20 +379,24 @@ const updateUserInfo = async ({
     id = getStorageUser().id;
   }
 
+  // {username} // ...{username} = username
+  // username ? {username} : null
+  // username && {username}
+
   if (id) {
     await updateDoc(doc(db, usersColl, id), {
       ...(username && { username }),
-      ...(img && { img }),
       ...(isOnline && { isOnline }),
       ...(isOffline && { isOnline: false }),
+      ...(img && { img }), // img:"someimage"
       lastSeen: serverTimestamp(),
     });
   }
 };
 
-// --------------------- For Task List -----------------------------
+// -------------------------- FOR Task list ----------------------
 
-// to add a single task list
+// add a single task list
 export const BE_addTaskList = async (
   dispatch: AppDispatch,
   setLoading: setLoadingType
@@ -239,7 +409,6 @@ export const BE_addTaskList = async (
   });
 
   const newDocSnap = await getDoc(doc(db, list.path));
-  // console.log(newDocSnap);
 
   if (newDocSnap.exists()) {
     const newlyAddedDoc: taskListType = {
@@ -250,30 +419,33 @@ export const BE_addTaskList = async (
     dispatch(addTaskList(newlyAddedDoc));
     setLoading(false);
   } else {
-    toastErr("BE_addTaskList: No such doc exists");
+    toastErr("BE_addTaskList:No such doc");
     setLoading(false);
   }
 };
 
-//get all task list
+// get all task list
 export const BE_getTaskList = async (
   dispatch: AppDispatch,
   setLoading: setLoadingType
 ) => {
   setLoading(true);
 
-  // get users task list
-  const taskList = await getAllTaskList();
+  if (getStorageUser().id) {
+    // get user task list
+    const taskList = await getAllTaskList();
 
-  dispatch(setTaskList(taskList));
-  setLoading(false);
+    dispatch(setTaskList(taskList));
+    setLoading(false);
+  }
 };
 
+
+
+// get all users taskList
 const getAllTaskList = async () => {
-  const q = query(
-    collection(db, taskListColl),
-    where("userId", "==", getStorageUser().id)
-  );
+  const id = getStorageUser().id;
+  const q = query(collection(db, taskListColl), where("userId", "==", id));
 
   const taskListSnapshot = await getDocs(q);
   const taskList: taskListType[] = [];
@@ -289,4 +461,112 @@ const getAllTaskList = async () => {
   });
 
   return taskList;
+};
+
+// -------------------------------- FOR TASK -------------------------------
+
+// delete task
+export const BE_deleteTask = async (
+  listId: string,
+  id: string,
+  dispatch: AppDispatch,
+  setLoading?: setLoadingType
+) => {
+  if (setLoading) setLoading(true);
+
+  // delete doc
+  const taskRef = doc(db, taskListColl, listId, tasksColl, id);
+  await deleteDoc(taskRef);
+
+  const deletedTask = await getDoc(taskRef);
+
+  if (!deletedTask.exists()) {
+    if (setLoading) setLoading(false);
+    dispatch(deleteTask({ listId, id }));
+  }
+};
+
+// add task
+export const BE_addTask = async (
+  dispatch: AppDispatch,
+  listId: string,
+  setLoading: setLoadingType
+) => {
+  setLoading(true);
+
+  const task = await addDoc(collection(db, taskListColl, listId, tasksColl), {
+    ...defaultTask,
+  });
+
+  const newTaskSnapShot = await getDoc(doc(db, task.path));
+
+  if (newTaskSnapShot.exists()) {
+    const { title, description } = newTaskSnapShot.data();
+    const newTask: taskType = {
+      id: newTaskSnapShot.id,
+      title,
+      description,
+    };
+    // add in store
+    dispatch(addTask({ listId, newTask }));
+    setLoading(false);
+  } else {
+    toastErr("BE_addTask: No such document");
+    setLoading(false);
+  }
+};
+
+// update task
+export const BE_saveTask = async (
+  dispatch: AppDispatch,
+  listId: string,
+  data: taskType,
+  setLoading: setLoadingType
+) => {
+  setLoading(true);
+  const { id, title, description } = data;
+
+  if (id) {
+    const taskRef = doc(db, taskListColl, listId, tasksColl, id);
+    await updateDoc(taskRef, { title, description });
+
+    const updatedTask = await getDoc(taskRef);
+
+    if (updatedTask.exists()) {
+      setLoading(false);
+      // dispatch
+      dispatch(saveTask({ listId, id: updatedTask.id, ...updatedTask.data() }));
+    } else toastErr("BE_saveTask: updated task not found");
+  } else toastErr("BE_saveTask: id not found");
+};
+
+// get tasks for task list
+export const getTasksForTaskList = async (
+  dispatch: AppDispatch,
+  listId: string,
+  setLoading: setLoadingType
+) => {
+  setLoading(true);
+
+  // get tasks in a single task list
+  const taskRef = collection(db, taskListColl, listId, tasksColl);
+  const tasksSnapshot = await getDocs(taskRef);
+  const tasks: taskType[] = [];
+
+  // if the tasks snap shot is not empty then do foreach
+  if (!tasksSnapshot.empty) {
+    tasksSnapshot.forEach((task) => {
+      const { title, description } = task.data();
+      tasks.push({
+        id: task.id,
+        title,
+        description,
+        editMode: false,
+        collapsed: true,
+      });
+    });
+  }
+
+  dispatch(setTaskListTasks({ listId, tasks }));
+  setLoading(false);
 };
