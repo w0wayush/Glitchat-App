@@ -1,5 +1,5 @@
+import { userType } from "@/Types";
 import { createSlice } from "@reduxjs/toolkit";
-import { userType } from "../Types";
 
 export const userStorageName = "superhero_user";
 

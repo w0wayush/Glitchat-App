@@ -1,5 +1,5 @@
+import { taskListType, taskType } from "@/Types";
 import { createSlice } from "@reduxjs/toolkit";
-import { taskListType, taskType } from "../Types";
 
 export const defaultTaskList: taskListType = {
   title: "Sample Task List",
