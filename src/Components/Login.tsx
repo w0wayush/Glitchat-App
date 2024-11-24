@@ -32,6 +32,7 @@ const Login = () => {
   };
   const handleSignin = () => {
     const data = { email, password };
+    // console.log(data)
     auth(data, BE_signIn, setSignInLoading);
   };
 
