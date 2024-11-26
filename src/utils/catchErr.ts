@@ -16,8 +16,10 @@ const CatchErr = (err: { code?: string }) => {
     toastErr("invalid credentials");
   else if (code === "auth/operation-not-allowed")
     toastErr("Can't change email now!");
+  else if (code === "auth/network-request-failed")
+    toastErr("Network error. Please try again.");
   else toastErr("An error occured!");
   console.log(err, err.code);
-};
+};  
 
 export default CatchErr;
