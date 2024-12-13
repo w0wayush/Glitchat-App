@@ -18,7 +18,7 @@ import {
   taskType,
   userType,
 } from "../Types";
-import { NavigateFunction } from "react-router-dom";
+import { NavigateFunction } from "react-router";
 import {
   addDoc,
   and,
@@ -33,7 +33,6 @@ import {
   query,
   serverTimestamp,
   setDoc,
-  Timestamp,
   updateDoc,
   where,
 } from "@firebase/firestore";
@@ -165,7 +164,7 @@ export const BE_signOut = (
       localStorage.removeItem(userStorageName);
 
       // route to auth page
-      goTo("/");
+      goTo("/auth");
 
       setLoading(false);
     })
@@ -440,7 +439,56 @@ export const BE_getTaskList = async (
   }
 };
 
+// save task list title
+export const BE_saveTaskList = async (
+  dispatch: AppDispatch,
+  setLoading: setLoadingType,
+  listId: string,
+  title: string
+) => {
+  setLoading(true);
 
+  await updateDoc(doc(db, taskListColl, listId), { title });
+
+  const updatedTaskList = await getDoc(doc(db, taskListColl, listId));
+
+  setLoading(false);
+
+  // dispatch to save task list
+  dispatch(
+    saveTaskListTitle({ id: updatedTaskList.id, ...updatedTaskList.data() })
+  );
+};
+
+// delete task list
+export const BE_deleteTaskList = async (
+  listId: string,
+  tasks: taskType[],
+  dispatch: AppDispatch,
+  setLoading?: setLoadingType
+) => {
+  if (setLoading) setLoading(true);
+
+  // looping through tasks and deleting each
+  if (tasks.length > 0) {
+    for (let i = 0; i < tasks.length; i++) {
+      const { id } = tasks[i];
+      if (id) BE_deleteTask(listId, id, dispatch);
+    }
+  }
+
+  // delete task list board
+  const listRef = doc(db, taskListColl, listId);
+  await deleteDoc(listRef);
+
+  const deletedTaskList = await getDoc(listRef);
+
+  if (!deletedTaskList.exists()) {
+    if (setLoading) setLoading(false);
+    // update state
+    dispatch(deleteTaskList(listId));
+  }
+};
 
 // get all users taskList
 const getAllTaskList = async () => {
