@@ -618,3 +618,93 @@ export const getTasksForTaskList = async (
   dispatch(setTaskListTasks({ listId, tasks }));
   setLoading(false);
 };
+
+// -------------------------------- FOR CHATS -------------------------------
+
+// start a chat
+export const BE_startChat = async (
+  dispatch: AppDispatch,
+  rId: string,
+  rName: string,
+  setLoading: setLoadingType
+) => {
+  const sId = getStorageUser().id;
+  setLoading(true);
+  // console.log(sId);
+
+  // check if chat exists first
+  const q = query(
+    collection(db, chatsColl),
+    or(
+      and(where("senderId", "==", sId), where("recieverId", "==", rId)),
+      and(where("senderId", "==", rId), where("recieverId", "==", sId))
+    )
+  );
+  const res = await getDocs(q);
+  // console.log(res);
+
+  // if you find no chat with this two ids then create one
+  if (res.empty) {
+    const newChat = await addDoc(collection(db, chatsColl), {
+      senderId: sId,
+      recieverId: rId,
+      lastMsg: "",
+      updatedAt: serverTimestamp(),
+      senderToRecieverNewMsgCount: 0,
+      recieverToSenderNewMsgCount: 0,
+    });
+
+    const newChatSnapshot = await getDoc(doc(db, newChat.path));
+
+    // console.log("Chat snapshot - ", newChatSnapshot);
+
+    if (!newChatSnapshot.exists()) {
+      toastErr("BE_startChat: No such document");
+    }
+    setLoading(false);
+    dispatch(setAlertProps({ open: false }));
+  } else {
+    toastErr("You already started chatting with " + rName);
+    setLoading(false);
+    dispatch(setAlertProps({ open: false }));
+  }
+};
+
+// get users chats
+export const BE_getChats = async (dispatch: AppDispatch) => {
+  const id = getStorageUser().id;
+
+  const q = query(
+    collection(db, chatsColl),
+    or(where("senderId", "==", id), where("recieverId", "==", id)),
+    orderBy("updatedAt", "desc")
+  );
+
+  onSnapshot(q, (chatSnapshot) => {
+    const chats: chatType[] = [];
+
+    chatSnapshot.forEach((chat) => {
+      const {
+        senderId,
+        recieverId,
+        lastMsg,
+        updatedAt,
+        recieverToSenderNewMsgCount,
+        senderToRecieverNewMsgCount,
+      } = chat.data();
+
+      chats.push({
+        id: chat.id,
+        senderId,
+        recieverId,
+        lastMsg,
+        updatedAt,
+        recieverToSenderNewMsgCount,
+        senderToRecieverNewMsgCount,
+      });
+    });
+
+    console.log("CHATS", chats);
+    dispatch(setChats(chats));
+  });
+};
