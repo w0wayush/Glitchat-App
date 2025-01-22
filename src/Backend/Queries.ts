@@ -708,3 +708,109 @@ export const BE_getChats = async (dispatch: AppDispatch) => {
     dispatch(setChats(chats));
   });
 };
+
+// export const BE_getChats = async (dispatch: AppDispatch) => {
+//   const id = getStorageUser().id;
+
+//   // Create two separate queries
+//   const sentChatsQuery = query(
+//     collection(db, chatsColl),
+//     where("senderId", "==", id),
+//     orderBy("updatedAt", "desc")
+//   );
+
+//   const receivedChatsQuery = query(
+//     collection(db, chatsColl),
+//     where("recieverId", "==", id),
+//     orderBy("updatedAt", "desc")
+//   );
+
+//   // Combine results from both queries
+//   const unsubscribeSent = onSnapshot(sentChatsQuery, (sentSnapshot) => {
+//     const unsubscribeReceived = onSnapshot(
+//       receivedChatsQuery,
+//       (receivedSnapshot) => {
+//         const chats: chatType[] = [];
+
+//         // Process sent chats
+//         sentSnapshot.forEach((chat) => {
+//           addChatToArray(chat, chats);
+//         });
+
+//         // Process received chats
+//         receivedSnapshot.forEach((chat) => {
+//           addChatToArray(chat, chats);
+//         });
+
+//         console.log("CHATS", chats);
+//         dispatch(setChats(chats));
+//       }
+//     );
+
+//     // Return cleanup function
+//     return () => {
+//       unsubscribeReceived();
+//     };
+//   });
+
+//   // Return cleanup function for both subscriptions
+//   return () => {
+//     unsubscribeSent();
+//   };
+// };
+
+// // Helper function to add chat to array
+// const addChatToArray = (chat: any, chats: chatType[]) => {
+//   const {
+//     senderId,
+//     recieverId,
+//     lastMsg,
+//     updatedAt,
+//     recieverToSenderNewMsgCount,
+//     senderToRecieverNewMsgCount,
+//   } = chat.data();
+
+//   chats.push({
+//     id: chat.id,
+//     senderId,
+//     recieverId,
+//     lastMsg,
+//     updatedAt,
+//     recieverToSenderNewMsgCount,
+//     senderToRecieverNewMsgCount,
+//   });
+// };
+
+// get users messages
+export const BE_getMsgs = async (
+  dispatch: AppDispatch,
+  chatId: string,
+  setLoading: setLoadingType
+) => {
+  setLoading(true);
+
+  const q = query(
+    collection(db, chatsColl, chatId, messagesColl),
+    orderBy("createdAt", "asc")
+  );
+
+  onSnapshot(q, (messagesSnapshot) => {
+    let msgs: messageType[] = [];
+
+    messagesSnapshot.forEach((msg) => {
+      const { senderId, content, createdAt } = msg.data();
+      msgs.push({
+        id: msg.id,
+        senderId,
+        content,
+        createdAt: createdAt
+          ? ConvertTime(createdAt.toDate())
+          : "no date yet: all messages",
+      });
+    });
+
+    dispatch(setCurrentMessages(msgs));
+    setLoading(false);
+  });
+};
+
