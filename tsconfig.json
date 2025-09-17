@@ -15,9 +15,6 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
   },
   "include": ["src", "next-env.d.ts", "**/*.ts", "**/*.tsx", "declarations.d.ts"],
   "exclude": ["node_modules", "build"]

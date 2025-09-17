@@ -814,3 +814,63 @@ export const BE_getMsgs = async (
   });
 };
 
+// get users messages
+export const BE_sendMsgs = async (
+  chatId: string,
+  data: messageType,
+  setLoading: setLoadingType
+) => {
+  setLoading(true);
+
+  const res = await addDoc(collection(db, chatsColl, chatId, messagesColl), {
+    ...data,
+    createdAt: serverTimestamp(),
+  });
+
+  const newMsg = await getDoc(doc(db, res.path));
+  if (newMsg.exists()) {
+    setLoading(false);
+    // reset new message count
+    await updateNewMsgCount(chatId, true);
+    await updateLastMsg(chatId, newMsg.data().content);
+    await updateUserInfo({}); // update last seen
+  }
+};
+
+// function to check if I created a chat
+export const iCreatedChat = (senderId: string) => {
+  const myId = getStorageUser().id;
+  return myId === senderId;
+};
+
+// updat new message count for user
+export const updateNewMsgCount = async (chatId: string, reset?: boolean) => {
+  const chat = await getDoc(doc(db, chatsColl, chatId));
+
+  let senderToRecieverNewMsgCount = chat.data()?.senderToRecieverNewMsgCount;
+  let recieverToSenderNewMsgCount = chat.data()?.recieverToSenderNewMsgCount;
+
+  if (iCreatedChat(chat.data()?.senderId)) {
+    if (reset) recieverToSenderNewMsgCount = 0;
+    else senderToRecieverNewMsgCount++;
+  } else {
+    if (reset) senderToRecieverNewMsgCount = 0;
+    else recieverToSenderNewMsgCount++;
+  }
+
+  await updateDoc(doc(db, chatsColl, chatId), {
+    updatedAt: serverTimestamp(),
+    senderToRecieverNewMsgCount,
+    recieverToSenderNewMsgCount,
+  });
+};
+
+// update last message
+const updateLastMsg = async (chatId: string, lastMsg: string) => {
+  await updateNewMsgCount(chatId);
+  // await message count here
+  await updateDoc(doc(db, chatsColl, chatId), {
+    lastMsg,
+    updatedAt: serverTimestamp(),
+  });
+};
