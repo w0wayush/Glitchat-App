@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { BE_getChats, BE_signOut, getStorageUser } from "../Backend/Queries";
 import Spinner from "./Spinner";
 import { setUser } from "../Redux/userSlice";
-const logo = require(".././Assets/Vector3.png");
+const logo = require(".././assets/Vector3.png");
 
 type Props = {};
 

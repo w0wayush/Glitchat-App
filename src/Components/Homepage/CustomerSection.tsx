@@ -2,7 +2,7 @@ import React from "react";
 import { GoArrowDownRight } from "react-icons/go";
 import { LuArrowUpLeft } from "react-icons/lu";
 import GlassCard from "./GlassCard";
-const logo = require("../../Assets/Vector3.png");
+const logo = require("../../assets/Vector3.png");
 
 const Cards = [
   {

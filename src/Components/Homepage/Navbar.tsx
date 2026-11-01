@@ -5,7 +5,7 @@ import UserHeaderProfile from "../UserHeaderProfile";
 import Spinner from "../Spinner";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../Redux/store";
-const logo = require("../../Assets/Vector3.png");
+const logo = require("../../assets/Vector3.png");
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
