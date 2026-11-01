@@ -5,7 +5,7 @@ import ChatPage from "./Pages/ChatPage";
 import ProfilePage from "./Pages/ProfilePage";
 import Layout from "./Pages/Layout";
 import HomePage from "./Pages/HomePage";
-import LogInPage from "./Pages/LoginPage";
+import LogInPage from "./Pages/LogInPage";
 
 function App() {
   return (
